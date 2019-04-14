@@ -10,7 +10,7 @@ stages:
   - deploy
 
 variables:
-  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
@@ -54,7 +54,7 @@ release-image:
 deploy:
   tags:
     - docker
-    - privileged    
+    - privileged
   stage: deploy
   script:
     - ./deploy.sh
