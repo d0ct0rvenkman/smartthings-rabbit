@@ -4,8 +4,8 @@ services:
   - docker:dind
 
 stages:
-  - build
   - test
+  - build
   - release
   - deploy
 
@@ -18,11 +18,18 @@ variables:
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
-build:
+syntax:
+  stage: test
+  tags:
+    - docker
+  script:
+    - find . -name "*.php" -print0 | xargs -0 -n1 -P8 php -l
+
+build_container:
+  stage: build
   tags:
     - docker
     - privileged
-  stage: build
   script:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
