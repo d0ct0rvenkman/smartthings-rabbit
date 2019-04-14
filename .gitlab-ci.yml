@@ -67,12 +67,12 @@ release-image:
   only:
     - master
 
-deploy:
-  tags:
-    - docker
-    - privileged
-  stage: deploy
-  script:
-    - ./deploy.sh
-  only:
-    - master
+# deploy:
+#   tags:
+#     - docker
+#     - privileged
+#   stage: deploy
+#   script:
+#     - ./deploy.sh
+#   only:
+#     - master
