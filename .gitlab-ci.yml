@@ -1,3 +1,4 @@
+
 image: docker:stable
 services:
   - docker:dind
@@ -18,6 +19,8 @@ before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 build:
+  tags:
+    - docker
   stage: build
   script:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
@@ -36,6 +39,8 @@ build:
 #     - docker run $CONTAINER_TEST_IMAGE /script/to/run/another/test
 
 release-image:
+  tags:
+    - docker
   stage: release
   script:
     - docker pull $CONTAINER_TEST_IMAGE
@@ -45,6 +50,8 @@ release-image:
     - master
 
 deploy:
+  tags:
+    - docker
   stage: deploy
   script:
     - ./deploy.sh
