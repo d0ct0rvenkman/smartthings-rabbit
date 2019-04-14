@@ -21,6 +21,7 @@ before_script:
 build:
   tags:
     - docker
+    - privileged
   stage: build
   script:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
@@ -41,6 +42,7 @@ build:
 release-image:
   tags:
     - docker
+    - privileged
   stage: release
   script:
     - docker pull $CONTAINER_TEST_IMAGE
@@ -52,6 +54,7 @@ release-image:
 deploy:
   tags:
     - docker
+    - privileged    
   stage: deploy
   script:
     - ./deploy.sh
