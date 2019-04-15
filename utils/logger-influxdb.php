@@ -9,32 +9,38 @@ if (isset($_ENV['REFRESHINTERVAL']))
 else
     define('REFRESHINTERVAL', 15);
 
-if (isset($_ENV['INFLUXDATABASE']))
-    define('INFLUXDATABASE', $_ENV['INFLUXDATABASE']);
-else
-    define('INFLUXDATABASE', 'SmartThings');
 
-if (getenv('SLACK_WEBHOOK_URL'))
-{
+if (isset($_ENV['INFLUXURL'])) {
+    define('INFLUXURL', $_ENV['INFLUXURL']);
+    $_INFLUXURL = INFLUXURL;
+} else {
+    echo "InfluxDB URL not present in environment. Exiting.\n";
+    exit(1);
+}
+
+if (isset($_ENV['INFLUXDATABASE'])) {
+    define('INFLUXDATABASE', $_ENV['INFLUXDATABASE']);
+} else {
+    echo "InfluxDB Database name not present in environment. Exiting.\n";
+    exit(1);
+}
+
+if (getenv('SLACK_WEBHOOK_URL')) {
     define('SLACK_WEBHOOK_URL', getenv('SLACK_WEBHOOK_URL'));
     echo "Using Slack Webhook URL: " . SLACK_WEBHOOK_URL . "\n";
-}
-else
-{
+} else {
     echo "Slack Webhook URL not present in environment. Exiting.\n";
     exit(1);
 }
 
-if (getenv('SLACK_CHANNEL'))
-{
+if (getenv('SLACK_CHANNEL')) {
     define('SLACK_CHANNEL', getenv('SLACK_CHANNEL'));
     echo "Using Slack Channel: " . SLACK_CHANNEL . "\n";
-}
-else
-{
+} else {
     echo "Slack Webhook Channel not present in environment. Exiting.\n";
     exit(1);
 }
+
 
 define('REFRESHWORKERS', 1);
 define('STORAGEWORKERS', 2);
