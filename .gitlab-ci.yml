@@ -44,17 +44,6 @@ build_container:
     - docker push $CONTAINER_TEST_IMAGE
     - docker push $CONTAINER_SHA_IMAGE
 
-# test1:
-#   stage: test
-#   script:
-#     - docker pull $CONTAINER_TEST_IMAGE
-#     - docker run $CONTAINER_TEST_IMAGE /script/to/run/tests
-#
-# test2:
-#   stage: test
-#   script:
-#     - docker pull $CONTAINER_TEST_IMAGE
-#     - docker run $CONTAINER_TEST_IMAGE /script/to/run/another/test
 
 release-image:
   tags:
@@ -69,12 +58,15 @@ release-image:
   only:
     - master
 
-# deploy:
-#   tags:
-#     - docker
-#     - privileged
-#   stage: deploy
-#   script:
-#     - ./deploy.sh
-#   only:
-#     - master
+push-to-kube:
+  tags:
+    - docker
+  stage: deploy
+  image: dtzar/helm-kubectl
+  script:
+    - kubectl config set-cluster k8s --server="${CI_K8S_SERVER}"
+    - kubectl config set clusters.k8s.certificate-authority-data ${CI_K8S_CADATA}
+    - kubectl config set-credentials gitlab --token="${CI_K8S_TOKEN}"
+    - kubectl config set-context default --cluster=k8s --user=gitlab
+    - kubectl config use-context default
+    - kubectl -n ${CI_K8S_NAMESPACE} set image deployment rabbit-worker rabbit-worker=${CONTAINER_SHA_IMAGE}
