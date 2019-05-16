@@ -1,8 +1,8 @@
 #!/usr/bin/php -q
 <?php
-require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../globals.php';
-require_once __DIR__ . '/../include.php';
+require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/globals.php';
+require_once __DIR__ . '/include.php';
 
 if (isset($_ENV['REFRESHINTERVAL']))
     define('REFRESHINTERVAL', $_ENV['REFRESHINTERVAL']);
