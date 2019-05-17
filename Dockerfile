@@ -15,4 +15,5 @@ RUN rm -rf smartapps vendor
 # versions of php-amqplib after 2.8.1 cause the workers to consume 100% CPU.
 # install a specific version until that's sorted out
 RUN /usr/bin/composer require php-amqplib/php-amqplib:2.8.1
+RUN /usr/bin/composer require composer require sqmk/Phue
 CMD [ "bash" ]
