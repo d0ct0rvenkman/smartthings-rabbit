@@ -598,6 +598,9 @@ function storeSmartThingsEventInInfluxDB($event, $eventType = null)
     $eventTime = $event['unixTimeMs'] / 1000;
     $latency = round((getmicrotime() - $eventTime), 4);
 
+    $data = "latency,eventType=${eventType},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName} value=${latency} ${timestamp}";
+    postMetricsToInfluxDB($data);
+
     $data = "${measurement},eventType=${eventType},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName}";
 
     // Unit tag and fields depend on the event type:
@@ -782,7 +785,7 @@ function storeSmartThingsEventInInfluxDB($event, $eventType = null)
         $data .= ",unit=${unit} value=${value}";
     }
 
-    $data .= ",latency=${latency} ${timestamp}";
+    $data .= " ${timestamp}";
 
     // Post data to InfluxDB:
     return postMetricsToInfluxDB($data);
