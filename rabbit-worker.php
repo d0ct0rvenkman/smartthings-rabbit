@@ -241,6 +241,10 @@ $processSmartThingsEventForSlack = function($msg)
 
 $processSmartThingsEventForHue = function($msg)
 {
+    global $_DEBUG;
+    $_DEBUG = false;
+
+
     $channel = $msg->delivery_info['channel'];
 
     $event = json_decode($msg->body, true);
@@ -290,12 +294,14 @@ $processSmartThingsEventForHue = function($msg)
     }
 
 
-
+    blab('Making a hue client\n');
     $hueclient = new \Phue\Client(HUE_HOST, HUE_USER);
 
+    blab('Getting lights\n');
     $bridge = new \Phue\Command\GetLights();
     $lights = $bridge->send($hueclient);
 
+    blab('Getting groups\n');
     $groups = $hueclient->getGroups();
     $AlertGroup = "Alert Group";
 
