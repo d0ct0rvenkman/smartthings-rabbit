@@ -282,6 +282,7 @@ $processSmartThingsEventForHue = function($msg)
         }
         default:
         {
+            stderr(date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] This isn't a message I care about.\n");
             ack($msg);
             return;
             break;
