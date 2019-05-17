@@ -242,7 +242,7 @@ $processSmartThingsEventForSlack = function($msg)
 $processSmartThingsEventForHue = function($msg)
 {
     global $_DEBUG;
-    $_DEBUG = true;
+    $_DEBUG = false;
 
 
     $channel = $msg->delivery_info['channel'];
