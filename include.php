@@ -598,7 +598,7 @@ function storeSmartThingsEventInInfluxDB($event, $eventType = null)
     $eventTime = $event['unixTimeMs'] / 1000;
     $latency = round((getmicrotime() - $eventTime), 4);
 
-    $data = "latency,eventType=${eventType},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName} value=${latency} ${timestamp}";
+    $data = "latency,eventType=${eventType},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName},measurement=${measurement} value=${latency} ${timestamp}";
     postMetricsToInfluxDB($data);
 
     $data = "${measurement},eventType=${eventType},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName}";
