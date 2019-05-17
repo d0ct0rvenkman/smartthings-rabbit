@@ -45,6 +45,7 @@ if (getenv('SLACK_CHANNEL')) {
 define('REFRESHWORKERS', 1);
 define('STORAGEWORKERS', 2);
 define('SLACKWORKERS', 2);
+define('HUEWORKERS', 1);
 
 
 define('SCRIPTNAME', 'logger-influxdb');
@@ -238,6 +239,155 @@ $processSmartThingsEventForSlack = function($msg)
 };
 
 
+$processSmartThingsEventForHue = function($msg)
+{
+    $channel = $msg->delivery_info['channel'];
+
+    $event = json_decode($msg->body, true);
+    $text = $event['value'];
+    $eventTime = $event['unixTimeMs'] / 1000;
+    $timeDiff = round((getmicrotime() - $eventTime), 4);
+
+
+
+    list(,$deviceName,$eventType) = explode('.', trim($msg->delivery_info['routing_key']), 3);
+
+    stderr(date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] Processing '$eventType' message for '$deviceName' (${timeDiff} seconds latency)\n");
+
+    if ($event['source'] != 'DEVICE')
+    {
+        echo date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] Skipping soft-poll event\n";
+        ack($msg);
+        return;
+    }
+
+    if ($timeDiff > 180) {
+        stderr(date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] Discarding message because of high latency.\n");
+        ack($msg);
+        return;
+    }
+
+
+    switch ("${eventType}-${text}")
+    {
+        case 'contact-open':
+        {
+            $color = "pink";
+            break;
+        }
+        case 'motion-active':
+        {
+            $color = "blue";
+            break;
+        }
+        default:
+        {
+            ack($msg);
+            return;
+            break;
+        }
+    }
+
+
+
+    $hueclient = new \Phue\Client(HUE_HOST, HUE_USER);
+
+    $bridge = new \Phue\Command\GetLights();
+    $lights = $bridge->send($hueclient);
+
+    $groups = $hueclient->getGroups();
+    $AlertGroup = "Alert Group";
+
+    foreach ($groups as $group) {
+        $groupName = $group->getName();
+        if ( $groupName == $AlertGroup) {
+            $AlertGroupID = $group->getId();
+            $lightArray = $group->getLightIds();
+            break;
+        }
+    }
+
+
+    if (!is_array($lightArray)) {
+        die("lights isn't an array!\n");
+    }
+
+    $colorparams = getColorParameters($color);
+
+    ack($msg);
+
+    $x = new \Phue\Command\SetGroupState($AlertGroupID);
+    $y = $x->on(true);
+    $hueclient->sendCommand($y);
+    #usleep(10000);
+
+    $y = $x->brightness(254);
+    $hueclient->sendCommand($y);
+    #usleep(10000);
+
+    $y = $x->hue($colorparams['hue']);
+    $hueclient->sendCommand($y);
+    #usleep(10000);
+
+    $y = $x->saturation($colorparams['sat']);
+    $hueclient->sendCommand($y);
+    #usleep(10000);
+
+    $y = $x->alert(\Phue\Command\SetLightState::ALERT_LONG_SELECT);
+    $hueclient->sendCommand($y);
+    sleep(10);
+    $y = $x->alert(\Phue\Command\SetLightState::ALERT_NONE);
+    $hueclient->sendCommand($y);
+    #usleep(10000);
+
+    foreach ($lights as $lightID => $lightObj) {
+        if (in_array($lightID, $lightArray)) {
+            $brightness = $lightObj->getBrightness();
+            $lightObj->setBrightness($brightness);
+            #usleep(10000);
+
+
+            $colorMode = $lightObj->getColorMode();
+            #echo "colorMode: $colorMode\n";
+            switch ($colorMode) {
+                case 'ct': {
+                    $colorTemp = $lightObj->getColorTemp();
+                    $lightObj->setColorTemp($colorTemp);
+                    #usleep(10000);
+                    break;
+                }
+                case 'hs':
+                {
+                    $hue = $lightObj->getHue();
+                    $sat = $lightObj->getSaturation();
+                    $lightObj->setHue($hue);
+                    #usleep(10000);
+                    $lightObj->setSaturation($sat);
+                    #usleep(10000);
+                    break;
+                }
+                case 'xy':
+                {
+                    $xy = $lightObj->getXY();
+                    #print_r($xy);
+                    $lightObj->setXY($xy['x'], $xy['y']);
+                    #usleep(10000);
+                    break;
+                }
+                default: {
+                    # this is a legitimate case for the white-only bulbs. they don't have a color mode.
+                    break;
+                }
+            }
+
+            $state = $lightObj->isOn();
+            $lightObj->setOn($state);
+            #usleep(10000);
+        }
+    }
+};
+
+
 cli_set_process_title("SmartThings Event Worker [parent]");
 
 $PREFETCHCOUNT = 2;
@@ -249,7 +399,7 @@ while (true)
     # Make sure we can't forkbomb
     usleep(500000);
 
-    if (count($PIDs) < (REFRESHWORKERS + STORAGEWORKERS + SLACKWORKERS))
+    if (count($PIDs) < (REFRESHWORKERS + STORAGEWORKERS + SLACKWORKERS + HUEWORKERS))
     {
 
         $shutdowntimer = rand(1800,3600);
@@ -262,6 +412,8 @@ while (true)
                 $StorageWorkerCount++;
             if ($ChildInfo['type'] == 'slack')
                 $SlackWorkerCount++;
+            if ($ChildInfo['type'] == 'hue')
+                $HueWorkerCount++;
         }
 
         if ($RefreshWorkerCount < REFRESHWORKERS)
@@ -274,6 +426,9 @@ while (true)
             } else
             if ($SlackWorkerCount < SLACKWORKERS) {
                 $WorkerType = 'slack';
+            } else
+            if ($HueWorkerCount < HUEWORKERS) {
+                $WorkerType = 'hue';
             }
         }
 
@@ -400,6 +555,58 @@ while (true)
 
                     $datachannel->basic_qos(null, $PREFETCHCOUNT, null);
                     $datachannel->basic_consume('events.slack', MYID . '-' . WORKERID, false, false, false, false, $processSmartThingsEventForSlack);
+
+                    $timeouts = array();
+                    $timeouts['keepalive'] = time() + 59;
+                    $timeouts['shutdown'] = time() + $shutdowntimer;
+
+                    while(count($datachannel->callbacks)) {
+                        if (time() > $timeouts['shutdown'] )
+                        {
+                            stderr(date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] Shutdown timer has elapsed. Exiting.\n");
+                            exit;
+                        }
+
+                        if (time() > $timeouts['keepalive'] )
+                        {
+                            #echo date("[Y/m/d H:i:s]") . "  Sending keepalive\n";
+                            $keepalivemsg = new AMQPMessage(time());
+                            $datachannel->basic_publish($keepalivemsg, 'amq.direct', "keepalive");
+
+                            $timeouts['keepalive'] = time() + 59;
+                        }
+
+                        $idle = false;
+                        $start = getmicrotime();
+
+                        do
+                        {
+                            try
+                            {
+                                $datachannel->wait(null, true, 1.0);
+                            }
+                            catch (Exception $e)
+                            {
+                                $idle = true;
+                            }
+                        } while (!$idle);
+
+                    }
+
+                    $datachannel->close();
+                    $_AMQPCONNECTION->close();
+
+                    exit;
+                    break;
+                }
+                case 'hue': {
+                    stderr(date("[Y/m/d H:i:s]") . str_pad(getmypid(), 7, " ", STR_PAD_LEFT) . "] I will shut myself down in $shutdowntimer seconds\n");
+
+                    $_AMQPCONNECTION = new AMQPStreamConnection($_RMQSERVER, $_RMQPORT, $_RMQUSER, $_RMQPASS, $_RMQVHOST);
+                    $datachannel = $_AMQPCONNECTION->channel();
+
+                    $datachannel->basic_qos(null, $PREFETCHCOUNT, null);
+                    $datachannel->basic_consume('events.hue', MYID . '-' . WORKERID, false, false, false, false, $processSmartThingsEventForHue);
 
                     $timeouts = array();
                     $timeouts['keepalive'] = time() + 59;

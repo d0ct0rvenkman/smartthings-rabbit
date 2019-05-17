@@ -69,6 +69,24 @@ else {
     exit(1);
 }
 
+if (isset($_ENV['HUE_HOST'])) {
+    define('HUE_HOST', $_ENV['HUE_HOST']);
+}
+else {
+    echo "Hue host is not present in environment. Exiting.\n";
+    exit(1);
+}
+
+if (isset($_ENV['HUE_USER'])) {
+    define('HUE_USER', $_ENV['HUE_USER']);
+}
+else {
+    echo "Hue host is not present in environment. Exiting.\n";
+    exit(1);
+}
+
+
+
 $_RMQSERVER = RMQSERVER;
 $_RMQPORT = RMQPORT;
 $_RMQUSER = RMQUSER;

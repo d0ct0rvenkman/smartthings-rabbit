@@ -787,3 +787,33 @@ function storeSmartThingsEventInInfluxDB($event, $eventType = null)
 
 }
 
+
+function getColorParameters($color = 'white')
+{
+    $retval = array();
+    switch ($color) {
+        case 'pink': {
+            $retval['hue'] = 54394;
+            $retval['sat'] = 254;
+            break;
+        }
+        case 'green': {
+            $retval['hue'] = 41372;
+            $retval['sat'] = 78;
+            break;
+        }
+        case 'blue': {
+            $retval['hue'] = 46014;
+            $retval['sat'] = 254;
+            break;
+        }
+        case 'white':
+        default: {
+            $retval['hue'] = 13582;
+            $retval['sat'] = 48;
+            break;
+        }
+    }
+
+    return $retval;
+}
