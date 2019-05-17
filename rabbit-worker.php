@@ -242,7 +242,7 @@ $processSmartThingsEventForSlack = function($msg)
 $processSmartThingsEventForHue = function($msg)
 {
     global $_DEBUG;
-    $_DEBUG = false;
+    $_DEBUG = true;
 
 
     $channel = $msg->delivery_info['channel'];
@@ -319,6 +319,7 @@ $processSmartThingsEventForHue = function($msg)
         die("lights isn't an array!\n");
     }
 
+    blab('Getting color parameters\n');
     $colorparams = getColorParameters($color);
 
     ack($msg);
