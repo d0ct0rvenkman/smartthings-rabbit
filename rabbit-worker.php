@@ -411,7 +411,7 @@ while (true)
     {
 
         $shutdowntimer = rand(1800,3600);
-        $RefreshWorkerCount = $StorageWorkerCount = $SlackWorkerCount = 0;
+        $RefreshWorkerCount = $StorageWorkerCount = $SlackWorkerCount = $HueWorkerCount = 0;
         foreach ($PIDs as $PID => $ChildInfo)
         {
             if ($ChildInfo['type'] == 'refresh')
