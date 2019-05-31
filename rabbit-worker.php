@@ -294,14 +294,14 @@ $processSmartThingsEventForHue = function($msg)
     }
 
 
-    blab('Making a hue client\n');
+    blab("Making a hue client\n");
     $hueclient = new \Phue\Client(HUE_HOST, HUE_USER);
 
-    blab('Getting lights\n');
+    blab("Getting lights\n");
     $bridge = new \Phue\Command\GetLights();
     $lights = $bridge->send($hueclient);
 
-    blab('Getting groups\n');
+    blab("Getting groups\n");
     $groups = $hueclient->getGroups();
     $AlertGroup = "Alert Group";
 
@@ -319,49 +319,41 @@ $processSmartThingsEventForHue = function($msg)
         die("lights isn't an array!\n");
     }
 
-    blab('Getting color parameters\n');
+    blab("Getting color parameters\n");
     $colorparams = getColorParameters($color);
 
     ack($msg);
 
     $x = new \Phue\Command\SetGroupState($AlertGroupID);
+    $y = $x->alert(\Phue\Command\SetLightState::ALERT_LONG_SELECT);
+    $hueclient->sendCommand($y);
+
     $y = $x->on(true);
     $hueclient->sendCommand($y);
-    #usleep(10000);
 
     $y = $x->brightness(254);
     $hueclient->sendCommand($y);
-    #usleep(10000);
 
     $y = $x->hue($colorparams['hue']);
     $hueclient->sendCommand($y);
-    #usleep(10000);
 
     $y = $x->saturation($colorparams['sat']);
     $hueclient->sendCommand($y);
-    #usleep(10000);
 
-    $y = $x->alert(\Phue\Command\SetLightState::ALERT_LONG_SELECT);
-    $hueclient->sendCommand($y);
     sleep(10);
     $y = $x->alert(\Phue\Command\SetLightState::ALERT_NONE);
     $hueclient->sendCommand($y);
-    #usleep(10000);
 
     foreach ($lights as $lightID => $lightObj) {
         if (in_array($lightID, $lightArray)) {
             $brightness = $lightObj->getBrightness();
             $lightObj->setBrightness($brightness);
-            #usleep(10000);
-
 
             $colorMode = $lightObj->getColorMode();
-            #echo "colorMode: $colorMode\n";
             switch ($colorMode) {
                 case 'ct': {
                     $colorTemp = $lightObj->getColorTemp();
                     $lightObj->setColorTemp($colorTemp);
-                    #usleep(10000);
                     break;
                 }
                 case 'hs':
@@ -369,17 +361,13 @@ $processSmartThingsEventForHue = function($msg)
                     $hue = $lightObj->getHue();
                     $sat = $lightObj->getSaturation();
                     $lightObj->setHue($hue);
-                    #usleep(10000);
                     $lightObj->setSaturation($sat);
-                    #usleep(10000);
                     break;
                 }
                 case 'xy':
                 {
                     $xy = $lightObj->getXY();
-                    #print_r($xy);
                     $lightObj->setXY($xy['x'], $xy['y']);
-                    #usleep(10000);
                     break;
                 }
                 default: {
@@ -390,9 +378,9 @@ $processSmartThingsEventForHue = function($msg)
 
             $state = $lightObj->isOn();
             $lightObj->setOn($state);
-            #usleep(10000);
         }
     }
+    usleep(100000);
 };
 
 
