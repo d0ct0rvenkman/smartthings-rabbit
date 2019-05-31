@@ -43,8 +43,8 @@ if (getenv('SLACK_CHANNEL')) {
 
 
 define('REFRESHWORKERS', 1);
-define('STORAGEWORKERS', 2);
-define('SLACKWORKERS', 2);
+define('STORAGEWORKERS', 1);
+define('SLACKWORKERS', 1);
 define('HUEWORKERS', 1);
 
 
